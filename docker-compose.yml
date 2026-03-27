@@ -1,0 +1,52 @@
+x-proxy-env: &proxy-env
+  http_proxy: ${CONTAINER_PROXY}
+  https_proxy: ${CONTAINER_PROXY}
+  HTTP_PROXY: ${CONTAINER_PROXY}
+  HTTPS_PROXY: ${CONTAINER_PROXY}
+
+services:
+  toolbox-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        <<: *proxy-env
+        USE_MIRROR: ${USE_MIRROR:-0}
+        BUN_VERSION: ${BUN_VERSION:-1.3.11}
+        UV_VERSION: ${UV_VERSION:-0.11.2}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.0}
+    image: agent-toolbox-base:trixie
+  toolbox-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      no_cache: true
+      additional_contexts:
+        base: service:toolbox-base
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        <<: *proxy-env
+        USE_MIRROR: ${USE_MIRROR:-0}
+        USERNAME: ${CONTAINER_USER:-dev}
+        USER_UID: ${CONTAINER_UID:-1000}
+        USER_GID: ${CONTAINER_GID:-1000}
+        USER_HOME: ${CONTAINER_HOME:-/home/dev}
+    image: agent-toolbox:trixie
+  toolbox:
+    image: agent-toolbox:trixie
+    user: "${CONTAINER_UID:-1000}:${CONTAINER_GID:-1000}"
+    stdin_open: true
+    tty: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *proxy-env
+      HOME: ${CONTAINER_HOME:-/home/dev}
+    volumes:
+      - ${HOME}/.qwen:${CONTAINER_HOME:-/home/dev}/.qwen
+      - ${HOME}/.gemini:${CONTAINER_HOME:-/home/dev}/.gemini
+      - ${HOME}/.codex:${CONTAINER_HOME:-/home/dev}/.codex
+      - ${HOME}/.config/opencode:${CONTAINER_HOME:-/home/dev}/.config/opencode
