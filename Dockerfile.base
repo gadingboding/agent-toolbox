@@ -36,6 +36,10 @@ RUN apt-get update \
         bubblewrap \
         ca-certificates \
         cargo \
+        ripgrep \
+        fd-find \
+        iputils-ping \
+        wget \
         cmake \
         curl \
         g++ \

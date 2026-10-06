@@ -22,7 +22,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      no_cache: true
       additional_contexts:
         base: service:toolbox-base
       extra_hosts:
@@ -46,7 +45,8 @@ services:
       <<: *proxy-env
       HOME: ${CONTAINER_HOME:-/home/dev}
     volumes:
-      - ${HOME}/.qwen:${CONTAINER_HOME:-/home/dev}/.qwen
+      - ${HOME}/.gitconfig:${CONTAINER_HOME:-/home/dev}/.gitconfig:ro
+      - ${HOME}/.minimax:${CONTAINER_HOME:-/home/dev}/.minimax
       - ${HOME}/.gemini:${CONTAINER_HOME:-/home/dev}/.gemini
       - ${HOME}/.codex:${CONTAINER_HOME:-/home/dev}/.codex
       - ${HOME}/.config/opencode:${CONTAINER_HOME:-/home/dev}/.config/opencode

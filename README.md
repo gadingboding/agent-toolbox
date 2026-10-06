@@ -8,7 +8,7 @@
 - `uv`
 - `git`、`tmux`、`vim`
 - `g++`、`cargo`、`cmake`
-- `opencode`、`qwen`、`gemini`、`codex` 等 AI CLI
+- `opencode`、MiniMax Code（`mcode`）、Antigravity（`agy`）、`codex` 等 AI CLI
 
 默认通过 `docker compose` 启动，并支持：
 - 用环境变量指定容器用户名、UID、GID、HOME
@@ -81,16 +81,25 @@ sudo apt-get install -y <package>
 
 分层策略：
 - `toolbox-base` 使用 `Dockerfile.base` 构建，包含 apt 包、`bun`、`uv`、`pnpm` 等稳定工具链；这一层会正常使用缓存。
-- `toolbox-build` 使用 `Dockerfile` 基于 `agent-toolbox-base:trixie` 继续构建，负责创建运行用户、写入用户级镜像配置、配置无密码 `sudo`，并安装 AI CLI，最终产出 `agent-toolbox:trixie`；这一层在 compose 中设置了 `build.no_cache: true`，所以每次手动构建都会重新执行最终层安装步骤。
+- `toolbox-build` 使用 `Dockerfile` 基于 `agent-toolbox-base:trixie` 继续构建，负责创建运行用户、写入用户级镜像配置、配置无密码 `sudo`，并安装 AI CLI，最终产出 `agent-toolbox:trixie`；日常构建使用缓存，更新 AI CLI 时显式加上 `--no-cache`。
 - `toolbox` 是纯运行服务，只引用 `agent-toolbox:trixie`，不包含 `build:` 配置；因此执行 `docker compose run toolbox ...` 时不会再进入 Compose 的构建流程。
 
 更新 AI CLI 或刷新最终镜像时，手动重建：
 
 ```bash
-docker compose build toolbox-build
+docker compose build --no-cache toolbox-build
 ```
 
-这会让 `@latest` 的 AI CLI 按构建当时的最新版本重新安装，但不会影响 `toolbox` 的日常运行命令。
+这会让 OpenCode、Codex 的 `@latest` 包和 MiniMax Code、Antigravity 的官方安装脚本重新安装构建当时的最新版本。已运行的容器需要退出后重新创建：
+
+```bash
+docker compose run --rm toolbox bash
+```
+
+MiniMax Code 和 Antigravity 在容器用户下安装，命令 `mcode` 和 `agy` 已加入 `PATH`，构建时会检查版本。`USE_MIRROR=1` 时，MiniMax Code 安装脚本使用其 `cn` 下载镜像。
+
+配置和登录数据通过宿主机目录挂载保留：MiniMax Code 使用 `~/.minimax`，Antigravity 使用 `~/.gemini`，Codex 使用 `~/.codex`，OpenCode 使用 `~/.config/opencode`。MiniMax 的安装目录 `~/.minimax-code` 和 Antigravity 的程序目录 `~/.local/bin` 保留在镜像内，不挂载宿主机目录。
+
+宿主机的 `~/.gitconfig` 以只读方式挂载到容器用户目录，容器沿用宿主机的 Git 姓名、邮箱及其他全局配置，无需重新构建镜像。全局配置请在宿主机修改；容器内仍可使用 `git config --local` 设置单个仓库的配置。
 
 `CONTAINER_PROXY` 为空时不会启用代理；只要给这个变量赋值，就会同时传给构建阶段和运行阶段的 `http_proxy`/`https_proxy`。
-

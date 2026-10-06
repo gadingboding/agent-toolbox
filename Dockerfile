@@ -10,7 +10,7 @@ ENV BUN_INSTALL=/usr/local/bun
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV PATH=/usr/local/bun/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
 
-SHELL ["/bin/bash", "-lc"]
+SHELL ["/bin/bash", "-c"]
 
 RUN : "${USE_MIRROR:?USE_MIRROR build arg is required}" \
     && : "${USERNAME:?USERNAME build arg is required}" \
@@ -38,14 +38,21 @@ RUN if [ "${USE_MIRROR}" = "1" ]; then \
     fi \
     && "${BUN_INSTALL}/bin/bun" install -g \
         opencode-ai@latest \
-        @qwen-code/qwen-code@latest \
-        @google/gemini-cli@latest \
         @openai/codex@latest
 
 RUN rm -rf /tmp/docker-config
 
 ENV USERNAME=${USERNAME}
 ENV HOME=${USER_HOME}
+ENV PATH=${USER_HOME}/.minimax-code/bin:${USER_HOME}/.local/bin:/usr/local/bun/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR ${USER_HOME}
 USER ${USERNAME}
+
+RUN set -o pipefail \
+    && curl -fsSL https://filecdn.minimax.chat/public/install.sh | MCODE_DOWNLOAD_MIRROR=cn MCODE_NO_MODIFY_PATH=1 bash
+
+RUN set -o pipefail \
+    && curl -fsSL https://antigravity.google/cli/install.sh | bash
+
+RUN mcode --version && agy --version
