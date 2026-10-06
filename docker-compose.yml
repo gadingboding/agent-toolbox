@@ -37,6 +37,12 @@ services:
   toolbox:
     image: agent-toolbox:trixie
     user: "${CONTAINER_UID:-1000}:${CONTAINER_GID:-1000}"
+    security_opt:
+      - seccomp=./docker/codex-seccomp.json
+      # Allow Bubblewrap namespace/mount setup inside the container.
+      - apparmor=unconfined
+      # Allow a fresh procfs in Bubblewrap's nested PID namespace.
+      - systempaths=unconfined
     stdin_open: true
     tty: true
     extra_hosts:

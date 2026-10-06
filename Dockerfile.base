@@ -40,7 +40,9 @@ RUN apt-get update \
         fd-find \
         iputils-ping \
         wget \
+        make \
         cmake \
+        ninja-build \
         curl \
         g++ \
         git \
