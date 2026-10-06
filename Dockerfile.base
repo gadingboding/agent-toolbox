@@ -1,4 +1,4 @@
-FROM debian:trixie-slim
+FROM debian:trixie
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG http_proxy
@@ -46,9 +46,11 @@ RUN apt-get update \
         curl \
         g++ \
         git \
+        file \
         libatomic1 \
         node-corepack \
         nodejs \
+        openssh-client \
         procps \
         python3-pip \
         sudo \

@@ -1,6 +1,6 @@
 # agent_docker
 
-一个基于 `debian:trixie-slim` 的分层容器环境，主要用于隔离运行 AI CLI 工具，减少对本地开发环境的污染或破坏。
+一个基于 `debian:trixie` 的分层容器环境，主要用于隔离运行 AI CLI 工具，减少对本地开发环境的污染或破坏。
 
 镜像内包含：
 - `nodejs` 和 `node-corepack`（通过 `corepack` 固定安装 `pnpm`）
