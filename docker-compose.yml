@@ -36,6 +36,8 @@ services:
     image: agent-toolbox:trixie
   toolbox:
     image: agent-toolbox:trixie
+    entrypoint: ["/bin/sh", "/usr/local/bin/toolbox-entrypoint.sh"]
+    command: ["/bin/bash"]
     user: "${CONTAINER_UID:-1000}:${CONTAINER_GID:-1000}"
     security_opt:
       - seccomp=./docker/codex-seccomp.json
@@ -50,9 +52,18 @@ services:
     environment:
       <<: *proxy-env
       HOME: ${CONTAINER_HOME:-/home/dev}
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/tmp/host-session-bus
     volumes:
+      - ./docker/toolbox-entrypoint.sh:/usr/local/bin/toolbox-entrypoint.sh:ro
       - ${HOME}/.gitconfig:${CONTAINER_HOME:-/home/dev}/.gitconfig:ro
       - ${HOME}/.minimax:${CONTAINER_HOME:-/home/dev}/.minimax
       - ${HOME}/.gemini:${CONTAINER_HOME:-/home/dev}/.gemini
       - ${HOME}/.codex:${CONTAINER_HOME:-/home/dev}/.codex
       - ${HOME}/.config/opencode:${CONTAINER_HOME:-/home/dev}/.config/opencode
+      # Read-only mounting does not restrict D-Bus methods or credential updates.
+      - type: bind
+        source: /run/user/${CONTAINER_UID:-1000}/bus
+        target: /tmp/host-session-bus
+        read_only: true
+        bind:
+          create_host_path: false

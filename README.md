@@ -100,7 +100,19 @@ docker compose run --rm toolbox bash
 
 MiniMax Code 和 Antigravity 在容器用户下安装，命令 `mcode` 和 `agy` 已加入 `PATH`，构建时会检查版本。`USE_MIRROR=1` 时，MiniMax Code 安装脚本使用其 `cn` 下载镜像。
 
-配置和登录数据通过宿主机目录挂载保留：MiniMax Code 使用 `~/.minimax`，Antigravity 使用 `~/.gemini`，Codex 使用 `~/.codex`，OpenCode 使用 `~/.config/opencode`。MiniMax 的安装目录 `~/.minimax-code` 和 Antigravity 的程序目录 `~/.local/bin` 保留在镜像内，不挂载宿主机目录。
+配置和登录数据通过宿主机目录挂载保留：MiniMax Code 使用 `~/.minimax`，Antigravity 的配置和历史使用 `~/.gemini`，Codex 使用 `~/.codex`，OpenCode 使用 `~/.config/opencode`。Antigravity 的 OAuth 登录凭据使用系统钥匙环，仅挂载 `~/.gemini` 不能复用宿主机登录。MiniMax 的安装目录 `~/.minimax-code` 和 Antigravity 的程序目录 `~/.local/bin` 保留在镜像内，不挂载宿主机目录。
+
+默认运行配置在 Linux 上接入宿主机钥匙环，以复用 Antigravity OAuth 登录（无需重建镜像）：
+
+```bash
+docker compose run --rm toolbox bash
+```
+
+该配置只读挂载 `/run/user/${CONTAINER_UID:-1000}/bus`，并设置 `DBUS_SESSION_BUS_ADDRESS`。宿主机需要运行 Secret Service 钥匙环服务，容器 UID 需要与宿主机用户匹配，钥匙环需要已解锁。已有容器需要重新创建。
+
+`agy 1.3.0` 即使能够连接 D-Bus，也会因检测到 `/.dockerenv` 而改用文件存储、跳过宿主机钥匙环。启动脚本在上述 socket 存在且环境变量匹配时，通过容器内 sudo 将该标记移动到 `/tmp/toolbox-dockerenv`，使 `agy` 可以读取宿主机钥匙环。这不会改变宿主机文件或 Docker 的实际隔离，但会影响其他程序通过 `/.dockerenv` 判断是否处于 Docker；其他容器检测方式仍然有效。已用 `agy models` 验证成功复用登录。该 workaround 需要镜像已有的免密码 sudo；上游修复后可移除。
+
+只读挂载限制的是文件系统修改，不限制通过 socket 发出的 D-Bus 请求。容器内程序仍可能读取、更新或删除宿主机钥匙环凭据（例如 `agy` 的 `/logout`），也可能访问该用户的其他 D-Bus 服务；这不提供只读钥匙环隔离。需要严格隔离时，应移除 D-Bus 挂载及对应环境变量，使用容器自己的钥匙环和单独登录。[Antigravity 登录说明](https://www.antigravity.google/docs/cli/install/)、[Secret Service API](https://specifications.freedesktop.org/secret-service/latest-single/)。
 
 宿主机的 `~/.gitconfig` 以只读方式挂载到容器用户目录，容器沿用宿主机的 Git 姓名、邮箱及其他全局配置，无需重新构建镜像。全局配置请在宿主机修改；容器内仍可使用 `git config --local` 设置单个仓库的配置。
 
